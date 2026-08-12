@@ -1,0 +1,14 @@
+.DS_Store
+.vscode/
+.github/modernize/
+
+frontend/node_modules/
+frontend/dist/
+
+backend/target/
+
+docker/.env
+
+*.log
+
+PROJECT_STATUS.md
