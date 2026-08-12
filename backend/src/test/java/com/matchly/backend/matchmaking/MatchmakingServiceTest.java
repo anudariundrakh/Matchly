@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import java.time.Duration;
 
 import java.util.UUID;
 
@@ -61,4 +63,58 @@ class MatchmakingServiceTest {
                 userIdString
         );
     }
+    @Test
+void secondUserShouldMatchWithWaitingUser() {
+    UUID waitingUserId = UUID.randomUUID();
+    UUID joiningUserId = UUID.randomUUID();
+
+    String waitingUserIdString = waitingUserId.toString();
+    String joiningUserIdString = joiningUserId.toString();
+
+    when(
+            valueOperations.get(
+                    "matchly:matchmaking:room:" + joiningUserIdString
+            )
+    ).thenReturn(null);
+
+    when(
+            listOperations.leftPop(
+                    "matchly:matchmaking:waiting"
+            )
+    ).thenReturn(waitingUserIdString);
+
+    MatchmakingResponse response =
+            matchmakingService.join(joiningUserId);
+
+    assertEquals("MATCHED", response.status());
+    assertNotNull(response.roomId());
+    assertEquals(
+            waitingUserIdString,
+            response.partnerUserId()
+    );
+
+    verify(valueOperations).set(
+            "matchly:matchmaking:room:" + joiningUserIdString,
+            response.roomId(),
+            Duration.ofMinutes(30)
+    );
+
+    verify(valueOperations).set(
+            "matchly:matchmaking:partner:" + joiningUserIdString,
+            waitingUserIdString,
+            Duration.ofMinutes(30)
+    );
+
+    verify(valueOperations).set(
+            "matchly:matchmaking:room:" + waitingUserIdString,
+            response.roomId(),
+            Duration.ofMinutes(30)
+    );
+
+    verify(valueOperations).set(
+            "matchly:matchmaking:partner:" + waitingUserIdString,
+            joiningUserIdString,
+            Duration.ofMinutes(30)
+    );
+}
 }
