@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import java.time.Duration;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import java.util.UUID;
 
@@ -116,5 +117,35 @@ void secondUserShouldMatchWithWaitingUser() {
             joiningUserIdString,
             Duration.ofMinutes(30)
     );
+}
+
+@Test
+void alreadyMatchedUserShouldReturnExistingMatch() {
+    UUID userId = UUID.randomUUID();
+
+    String userIdString = userId.toString();
+    String roomId = UUID.randomUUID().toString();
+    String partnerUserId = UUID.randomUUID().toString();
+
+    when(
+            valueOperations.get(
+                    "matchly:matchmaking:room:" + userIdString
+            )
+    ).thenReturn(roomId);
+
+    when(
+            valueOperations.get(
+                    "matchly:matchmaking:partner:" + userIdString
+            )
+    ).thenReturn(partnerUserId);
+
+    MatchmakingResponse response =
+            matchmakingService.join(userId);
+
+    assertEquals("MATCHED", response.status());
+    assertEquals(roomId, response.roomId());
+    assertEquals(partnerUserId, response.partnerUserId());
+
+    verifyNoInteractions(listOperations);
 }
 }
