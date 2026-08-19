@@ -38,7 +38,8 @@ function TextChatPage() {
   const pollingRef = useRef(null);
 
   const currentUser = getStoredUser();
-  const displayName = currentUser?.displayName ?? "Guest";
+  const displayName =
+    currentUser?.displayName ?? "Guest";
 
   useEffect(() => {
     return () => {
@@ -93,13 +94,33 @@ function TextChatPage() {
               messageFrame.body,
             );
 
+            if (
+              receivedMessage.type ===
+              "PARTNER_LEFT"
+            ) {
+              setIsConnected(false);
+              setMatchStatus("idle");
+              setRoomId(null);
+              setMessage("");
+
+              setErrorMessage(
+                "Stranger disconnected.",
+              );
+
+              void client.deactivate();
+              clientRef.current = null;
+
+              return;
+            }
+
             const newMessage = {
               id: crypto.randomUUID(),
               sender: receivedMessage.sender,
               text: receivedMessage.content,
               sentAt: receivedMessage.sentAt,
               isOwn:
-                receivedMessage.sender === displayName,
+                receivedMessage.sender ===
+                displayName,
             };
 
             setMessages((currentMessages) => [
@@ -143,7 +164,8 @@ function TextChatPage() {
 
   async function checkForMatch() {
     try {
-      const result = await getMatchmakingStatus();
+      const result =
+        await getMatchmakingStatus();
 
       if (result.status === "MATCHED") {
         stopPolling();
@@ -166,7 +188,8 @@ function TextChatPage() {
     setMatchStatus("searching");
 
     try {
-      const result = await joinMatchmaking();
+      const result =
+        await joinMatchmaking();
 
       if (result.status === "MATCHED") {
         setRoomId(result.roomId);
@@ -216,8 +239,11 @@ function TextChatPage() {
   function handleSendMessage(event) {
     event.preventDefault();
 
-    const cleanedMessage = message.trim();
-    const client = clientRef.current;
+    const cleanedMessage =
+      message.trim();
+
+    const client =
+      clientRef.current;
 
     if (
       !isConnected ||
@@ -261,8 +287,13 @@ function TextChatPage() {
       <section className="page-card">
         <div className="chat-page-header">
           <div>
-            <p className="badge">Text chat</p>
-            <h1>Find a text-chat match</h1>
+            <p className="badge">
+              Text chat
+            </p>
+
+            <h1>
+              Find a text-chat match
+            </h1>
           </div>
 
           <span
@@ -277,8 +308,8 @@ function TextChatPage() {
         </div>
 
         <p className="page-description">
-          Match with another person and chat privately
-          in real time.
+          Match with another person and chat
+          privately in real time.
         </p>
 
         {errorMessage && (
@@ -311,24 +342,28 @@ function TextChatPage() {
             </div>
           ) : (
             <div className="message-list">
-              {messages.map((chatMessage) => (
-                <div
-                  className={
-                    chatMessage.isOwn
-                      ? "message-bubble own-message"
-                      : "message-bubble other-message"
-                  }
-                  key={chatMessage.id}
-                >
-                  <span className="message-sender">
-                    {chatMessage.isOwn
-                      ? "You"
-                      : chatMessage.sender}
-                  </span>
+              {messages.map(
+                (chatMessage) => (
+                  <div
+                    className={
+                      chatMessage.isOwn
+                        ? "message-bubble own-message"
+                        : "message-bubble other-message"
+                    }
+                    key={chatMessage.id}
+                  >
+                    <span className="message-sender">
+                      {chatMessage.isOwn
+                        ? "You"
+                        : chatMessage.sender}
+                    </span>
 
-                  <p>{chatMessage.text}</p>
-                </div>
-              ))}
+                    <p>
+                      {chatMessage.text}
+                    </p>
+                  </div>
+                ),
+              )}
             </div>
           )}
         </div>

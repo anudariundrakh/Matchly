@@ -24,26 +24,36 @@ public class MatchmakingService {
     private static final Duration ROOM_EXPIRATION =
             Duration.ofMinutes(30);
 
-    private static final DefaultRedisScript<String> JOIN_SCRIPT;
+    private static final DefaultRedisScript<String>
+            JOIN_SCRIPT;
 
-    private static final DefaultRedisScript<Long> LEAVE_SCRIPT;
+    private static final DefaultRedisScript<String>
+            LEAVE_SCRIPT;
 
     static {
         JOIN_SCRIPT = new DefaultRedisScript<>();
+
         JOIN_SCRIPT.setLocation(
                 new ClassPathResource(
                         "redis/matchmaking-join.lua"
                 )
         );
-        JOIN_SCRIPT.setResultType(String.class);
+
+        JOIN_SCRIPT.setResultType(
+                String.class
+        );
 
         LEAVE_SCRIPT = new DefaultRedisScript<>();
+
         LEAVE_SCRIPT.setLocation(
                 new ClassPathResource(
                         "redis/matchmaking-leave.lua"
                 )
         );
-        LEAVE_SCRIPT.setResultType(Long.class);
+
+        LEAVE_SCRIPT.setResultType(
+                String.class
+        );
     }
 
     private final StringRedisTemplate redis;
@@ -57,8 +67,11 @@ public class MatchmakingService {
     public MatchmakingResponse join(
             UUID userId
     ) {
-        String currentUserId = userId.toString();
-        String newRoomId = UUID.randomUUID().toString();
+        String currentUserId =
+                userId.toString();
+
+        String newRoomId =
+                UUID.randomUUID().toString();
 
         String result = redis.execute(
                 JOIN_SCRIPT,
@@ -88,7 +101,8 @@ public class MatchmakingService {
             );
         }
 
-        String status = parts[0];
+        String status =
+                parts[0];
 
         String roomId =
                 parts[1].isBlank()
@@ -110,7 +124,8 @@ public class MatchmakingService {
     public MatchmakingResponse status(
             UUID userId
     ) {
-        String currentUserId = userId.toString();
+        String currentUserId =
+                userId.toString();
 
         String roomId = redis
                 .opsForValue()
@@ -140,26 +155,27 @@ public class MatchmakingService {
                 partnerUserId
         );
     }
+
     public boolean isUserInRoom(
-        UUID userId,
-        UUID roomId
-) {
-    String currentRoomId = redis
-            .opsForValue()
-            .get(
-                    ROOM_PREFIX
-                            + userId
-            );
+            UUID userId,
+            UUID roomId
+    ) {
+        String currentRoomId = redis
+                .opsForValue()
+                .get(
+                        ROOM_PREFIX
+                                + userId
+                );
 
-    return roomId.toString().equals(
-            currentRoomId
-    );
-}
+        return roomId
+                .toString()
+                .equals(currentRoomId);
+    }
 
-    public void leave(
+    public MatchmakingResponse leave(
             UUID userId
     ) {
-        Long result = redis.execute(
+        String result = redis.execute(
                 LEAVE_SCRIPT,
                 List.of(WAITING_QUEUE),
                 userId.toString(),
@@ -172,5 +188,31 @@ public class MatchmakingService {
                     "Redis leave script returned no result"
             );
         }
+
+        String[] parts =
+                result.split("\\|", -1);
+
+        if (parts.length != 2) {
+            throw new IllegalStateException(
+                    "Unexpected matchmaking leave response: "
+                            + result
+            );
+        }
+
+        String roomId =
+                parts[0].isBlank()
+                        ? null
+                        : parts[0];
+
+        String partnerUserId =
+                parts[1].isBlank()
+                        ? null
+                        : parts[1];
+
+        return new MatchmakingResponse(
+                "LEFT",
+                roomId,
+                partnerUserId
+        );
     }
 }
