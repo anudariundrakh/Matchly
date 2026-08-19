@@ -140,6 +140,21 @@ public class MatchmakingService {
                 partnerUserId
         );
     }
+    public boolean isUserInRoom(
+        UUID userId,
+        UUID roomId
+) {
+    String currentRoomId = redis
+            .opsForValue()
+            .get(
+                    ROOM_PREFIX
+                            + userId
+            );
+
+    return roomId.toString().equals(
+            currentRoomId
+    );
+}
 
     public void leave(
             UUID userId

@@ -62,8 +62,23 @@ function TextChatPage() {
       return;
     }
 
+    const token = localStorage.getItem(
+      "matchly_access_token",
+    );
+
+    if (!token) {
+      setErrorMessage(
+        "You must be logged in to connect to chat.",
+      );
+      return;
+    }
+
     const client = new Client({
       brokerURL: WEBSOCKET_URL,
+
+      connectHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
 
       reconnectDelay: 5000,
 
@@ -100,7 +115,10 @@ function TextChatPage() {
       },
 
       onWebSocketError: (error) => {
-        console.error("WebSocket error:", error);
+        console.error(
+          "WebSocket error:",
+          error,
+        );
 
         setErrorMessage(
           "Could not connect to the chat server.",
@@ -182,7 +200,10 @@ function TextChatPage() {
     try {
       await leaveMatchmaking();
     } catch (error) {
-      console.error("Could not leave matchmaking:", error);
+      console.error(
+        "Could not leave matchmaking:",
+        error,
+      );
     }
 
     setIsConnected(false);
@@ -212,7 +233,6 @@ function TextChatPage() {
 
       body: JSON.stringify({
         roomId,
-        sender: displayName,
         content: cleanedMessage,
       }),
     });
@@ -262,7 +282,10 @@ function TextChatPage() {
         </p>
 
         {errorMessage && (
-          <p className="auth-error" role="alert">
+          <p
+            className="auth-error"
+            role="alert"
+          >
             {errorMessage}
           </p>
         )}
@@ -331,7 +354,8 @@ function TextChatPage() {
           <button
             type="submit"
             disabled={
-              !isConnected || message.trim() === ""
+              !isConnected ||
+              message.trim() === ""
             }
           >
             Send
@@ -345,7 +369,9 @@ function TextChatPage() {
               type="button"
               onClick={handleEndChat}
             >
-              {isConnected ? "End Chat" : "Cancel"}
+              {isConnected
+                ? "End Chat"
+                : "Cancel"}
             </button>
           ) : (
             <button
