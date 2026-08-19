@@ -39,6 +39,8 @@ redis.call(
     userPartnerKey
 )
 
+local disconnectedPartner = ""
+
 if partnerUserId then
     local partnerRoomKey =
             roomPrefix .. partnerUserId
@@ -70,7 +72,12 @@ if partnerUserId then
             "DEL",
             partnerPartnerKey
         )
+
+        disconnectedPartner =
+                partnerUserId
     end
 end
 
-return 1
+return (currentRoom or "")
+        .. "|"
+        .. disconnectedPartner
