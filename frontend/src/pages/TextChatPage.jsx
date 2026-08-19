@@ -38,6 +38,7 @@ function TextChatPage() {
   const pollingRef = useRef(null);
 
   const currentUser = getStoredUser();
+
   const displayName =
     currentUser?.displayName ?? "Guest";
 
@@ -71,6 +72,7 @@ function TextChatPage() {
       setErrorMessage(
         "You must be logged in to connect to chat.",
       );
+
       return;
     }
 
@@ -177,6 +179,7 @@ function TextChatPage() {
       }
     } catch (error) {
       stopPolling();
+
       setMatchStatus("idle");
       setErrorMessage(error.message);
     }
@@ -234,6 +237,41 @@ function TextChatPage() {
     setRoomId(null);
     setMessage("");
     setMessages([]);
+  }
+
+  async function handleNextStranger() {
+    stopPolling();
+
+    setErrorMessage("");
+    setIsConnected(false);
+
+    if (clientRef.current) {
+      await clientRef.current.deactivate();
+      clientRef.current = null;
+    }
+
+    try {
+      await leaveMatchmaking();
+    } catch (error) {
+      console.error(
+        "Could not leave current match:",
+        error,
+      );
+
+      setMatchStatus("idle");
+
+      setErrorMessage(
+        "Could not leave the current chat.",
+      );
+
+      return;
+    }
+
+    setRoomId(null);
+    setMessage("");
+    setMessages([]);
+
+    await handleStartMatching();
   }
 
   function handleSendMessage(event) {
@@ -398,15 +436,31 @@ function TextChatPage() {
         </form>
 
         <div className="chat-actions">
-          {matchStatus !== "idle" ? (
+          {isConnected ? (
+            <>
+              <button
+                className="primary-button"
+                type="button"
+                onClick={handleNextStranger}
+              >
+                Next Stranger
+              </button>
+
+              <button
+                className="secondary-button"
+                type="button"
+                onClick={handleEndChat}
+              >
+                End Chat
+              </button>
+            </>
+          ) : matchStatus !== "idle" ? (
             <button
               className="secondary-button"
               type="button"
               onClick={handleEndChat}
             >
-              {isConnected
-                ? "End Chat"
-                : "Cancel"}
+              Cancel
             </button>
           ) : (
             <button
