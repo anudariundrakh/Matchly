@@ -26,6 +26,8 @@ public class MatchmakingService {
 
     private static final DefaultRedisScript<String> JOIN_SCRIPT;
 
+    private static final DefaultRedisScript<Long> LEAVE_SCRIPT;
+
     static {
         JOIN_SCRIPT = new DefaultRedisScript<>();
         JOIN_SCRIPT.setLocation(
@@ -34,6 +36,14 @@ public class MatchmakingService {
                 )
         );
         JOIN_SCRIPT.setResultType(String.class);
+
+        LEAVE_SCRIPT = new DefaultRedisScript<>();
+        LEAVE_SCRIPT.setLocation(
+                new ClassPathResource(
+                        "redis/matchmaking-leave.lua"
+                )
+        );
+        LEAVE_SCRIPT.setResultType(Long.class);
     }
 
     private final StringRedisTemplate redis;
@@ -68,11 +78,13 @@ public class MatchmakingService {
             );
         }
 
-        String[] parts = result.split("\\|", -1);
+        String[] parts =
+                result.split("\\|", -1);
 
         if (parts.length != 3) {
             throw new IllegalStateException(
-                    "Unexpected matchmaking response: " + result
+                    "Unexpected matchmaking response: "
+                            + result
             );
         }
 
@@ -95,12 +107,17 @@ public class MatchmakingService {
         );
     }
 
-    public MatchmakingResponse status(UUID userId) {
+    public MatchmakingResponse status(
+            UUID userId
+    ) {
         String currentUserId = userId.toString();
 
         String roomId = redis
                 .opsForValue()
-                .get(ROOM_PREFIX + currentUserId);
+                .get(
+                        ROOM_PREFIX
+                                + currentUserId
+                );
 
         if (roomId == null) {
             return new MatchmakingResponse(
@@ -112,7 +129,10 @@ public class MatchmakingService {
 
         String partnerUserId = redis
                 .opsForValue()
-                .get(PARTNER_PREFIX + currentUserId);
+                .get(
+                        PARTNER_PREFIX
+                                + currentUserId
+                );
 
         return new MatchmakingResponse(
                 "MATCHED",
@@ -121,34 +141,20 @@ public class MatchmakingService {
         );
     }
 
-    public void leave(UUID userId) {
-        String currentUserId = userId.toString();
-
-        redis.opsForList().remove(
-                WAITING_QUEUE,
-                0,
-                currentUserId
+    public void leave(
+            UUID userId
+    ) {
+        Long result = redis.execute(
+                LEAVE_SCRIPT,
+                List.of(WAITING_QUEUE),
+                userId.toString(),
+                ROOM_PREFIX,
+                PARTNER_PREFIX
         );
 
-        String partnerUserId = redis
-                .opsForValue()
-                .get(PARTNER_PREFIX + currentUserId);
-
-        redis.delete(
-                ROOM_PREFIX + currentUserId
-        );
-
-        redis.delete(
-                PARTNER_PREFIX + currentUserId
-        );
-
-        if (partnerUserId != null) {
-            redis.delete(
-                    ROOM_PREFIX + partnerUserId
-            );
-
-            redis.delete(
-                    PARTNER_PREFIX + partnerUserId
+        if (result == null) {
+            throw new IllegalStateException(
+                    "Redis leave script returned no result"
             );
         }
     }

@@ -3,6 +3,7 @@ package com.matchly.backend.matchmaking;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -232,6 +233,211 @@ void concurrentUsersShouldEndInOneReciprocalMatch()
         assertEquals(
                 0L,
                 queueSize.longValue()
+        );
+
+    } finally {
+        executor.shutdownNow();
+    }
+}
+
+@Test
+void leavingMatchedUserShouldClearBothUsers() {
+    UUID userA = UUID.randomUUID();
+    UUID userB = UUID.randomUUID();
+
+    serviceA.join(userA);
+    serviceB.join(userB);
+
+    serviceA.leave(userA);
+
+    MatchmakingResponse userAStatus =
+            serviceA.status(userA);
+
+    MatchmakingResponse userBStatus =
+            serviceB.status(userB);
+
+    assertEquals(
+            "WAITING",
+            userAStatus.status()
+    );
+
+    assertEquals(
+            "WAITING",
+            userBStatus.status()
+    );
+
+    assertNull(
+            userAStatus.roomId()
+    );
+
+    assertNull(
+            userAStatus.partnerUserId()
+    );
+
+    assertNull(
+            userBStatus.roomId()
+    );
+
+    assertNull(
+            userBStatus.partnerUserId()
+    );
+
+    Long queueSize =
+            redis.opsForList().size(
+                    "matchly:matchmaking:waiting"
+            );
+
+    assertNotNull(queueSize);
+
+    assertEquals(
+            0L,
+            queueSize.longValue()
+    );
+}
+
+@Test
+void leavingWaitingUserShouldRemoveThemFromQueue() {
+    UUID userA = UUID.randomUUID();
+
+    MatchmakingResponse response =
+            serviceA.join(userA);
+
+    assertEquals(
+            "WAITING",
+            response.status()
+    );
+
+    Long queueSizeBefore =
+            redis.opsForList().size(
+                    "matchly:matchmaking:waiting"
+            );
+
+    assertNotNull(queueSizeBefore);
+
+    assertEquals(
+            1L,
+            queueSizeBefore.longValue()
+    );
+
+    serviceA.leave(userA);
+
+    Long queueSizeAfter =
+            redis.opsForList().size(
+                    "matchly:matchmaking:waiting"
+            );
+
+    assertNotNull(queueSizeAfter);
+
+    assertEquals(
+            0L,
+            queueSizeAfter.longValue()
+    );
+}
+
+@Test
+void concurrentLeaveAndJoinShouldNotCreateHalfMatch()
+        throws Exception {
+
+    UUID userA = UUID.randomUUID();
+    UUID userB = UUID.randomUUID();
+
+    MatchmakingResponse firstResponse =
+            serviceA.join(userA);
+
+    assertEquals(
+            "WAITING",
+            firstResponse.status()
+    );
+
+    ExecutorService executor =
+            Executors.newFixedThreadPool(2);
+
+    CountDownLatch ready =
+            new CountDownLatch(2);
+
+    CountDownLatch start =
+            new CountDownLatch(1);
+
+    try {
+        Future<?> leaveFuture =
+                executor.submit(() -> {
+                    ready.countDown();
+                    start.await();
+
+                    serviceA.leave(userA);
+
+                    return null;
+                });
+
+        Future<MatchmakingResponse> joinFuture =
+                executor.submit(() -> {
+                    ready.countDown();
+                    start.await();
+
+                    return serviceB.join(userB);
+                });
+
+        assertTrue(
+                ready.await(
+                        5,
+                        TimeUnit.SECONDS
+                )
+        );
+
+        start.countDown();
+
+        leaveFuture.get(
+                5,
+                TimeUnit.SECONDS
+        );
+
+        joinFuture.get(
+                5,
+                TimeUnit.SECONDS
+        );
+
+        MatchmakingResponse userAStatus =
+                serviceA.status(userA);
+
+        MatchmakingResponse userBStatus =
+                serviceB.status(userB);
+
+        assertEquals(
+                "WAITING",
+                userAStatus.status()
+        );
+
+        assertEquals(
+                "WAITING",
+                userBStatus.status()
+        );
+
+        assertNull(
+                userAStatus.roomId()
+        );
+
+        assertNull(
+                userAStatus.partnerUserId()
+        );
+
+        assertNull(
+                userBStatus.roomId()
+        );
+
+        assertNull(
+                userBStatus.partnerUserId()
+        );
+
+        Long queueSize =
+                redis.opsForList().size(
+                        "matchly:matchmaking:waiting"
+                );
+
+        assertNotNull(queueSize);
+
+        assertTrue(
+                queueSize == 0L
+                        || queueSize == 1L
         );
 
     } finally {
