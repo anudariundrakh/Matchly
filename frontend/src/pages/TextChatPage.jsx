@@ -233,7 +233,6 @@ function TextChatPage() {
 
       body: JSON.stringify({
         roomId,
-        sender: displayName,
         content: cleanedMessage,
       }),
     });
