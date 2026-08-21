@@ -8,7 +8,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface UserAccountRepository
         extends JpaRepository<UserAccount, UUID> {
 
-    Optional<UserAccount> findByEmailIgnoreCase(String email);
+    Optional<UserAccount> findByEmailIgnoreCase(
+            String email
+    );
 
-    boolean existsByEmailIgnoreCase(String email);
+    Optional<UserAccount> findByEmailVerificationTokenHash(
+            String emailVerificationTokenHash
+    );
+
+    boolean existsByEmailIgnoreCase(
+            String email
+    );
 }

@@ -35,7 +35,8 @@ public class SecurityConfig {
 
                 .requestMatchers(
                     HttpMethod.GET,
-                    "/api/health"
+                    "/api/health",
+                    "/api/users/verify-email"
                 ).permitAll()
 
                 .requestMatchers(
@@ -45,6 +46,7 @@ public class SecurityConfig {
                 ).permitAll()
 
                 .requestMatchers("/error").permitAll()
+
                 .requestMatchers("/ws/**").permitAll()
 
                 .anyRequest().authenticated()

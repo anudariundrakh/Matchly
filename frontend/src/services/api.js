@@ -66,6 +66,16 @@ export async function registerUser(
   return handleResponse(response);
 }
 
+export async function verifyEmail(token) {
+  const response = await fetch(
+    `${API_BASE_URL}/api/users/verify-email?token=${encodeURIComponent(
+      token,
+    )}`,
+  );
+
+  return handleResponse(response);
+}
+
 export async function getCurrentUser() {
   const accessToken = localStorage.getItem(
     "matchly_access_token",

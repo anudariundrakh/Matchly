@@ -12,50 +12,92 @@ public class UserService {
 
     private final UserAccountRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService emailVerificationService;
+    private final EmailVerificationMailService emailVerificationMailService;
 
     public UserService(
             UserAccountRepository userRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            EmailVerificationService emailVerificationService,
+            EmailVerificationMailService emailVerificationMailService
     ) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
+        this.userRepository =
+                userRepository;
+
+        this.passwordEncoder =
+                passwordEncoder;
+
+        this.emailVerificationService =
+                emailVerificationService;
+
+        this.emailVerificationMailService =
+                emailVerificationMailService;
     }
 
     @Transactional
-    public UserResponse register(RegisterUserRequest request) {
+    public UserResponse register(
+            RegisterUserRequest request
+    ) {
         String email = request
                 .email()
                 .trim()
                 .toLowerCase(Locale.ROOT);
 
-        String displayName = request.displayName().trim();
+        String displayName = request
+                .displayName()
+                .trim();
 
-        if (userRepository.existsByEmailIgnoreCase(email)) {
+        if (userRepository.existsByEmailIgnoreCase(
+                email
+        )) {
             throw new EmailAlreadyExistsException();
         }
 
         String passwordHash =
-                passwordEncoder.encode(request.password());
+                passwordEncoder.encode(
+                        request.password()
+                );
 
-        UserAccount user = new UserAccount(
-                email,
-                displayName,
-                passwordHash
+        UserAccount user =
+                new UserAccount(
+                        email,
+                        displayName,
+                        passwordHash
+                );
+
+        String verificationToken =
+                emailVerificationService
+                        .createVerificationToken(
+                                user
+                        );
+
+        UserAccount savedUser =
+                userRepository.save(user);
+
+        emailVerificationMailService
+                .sendVerificationEmail(
+                        savedUser,
+                        verificationToken
+                );
+
+        return UserResponse.from(
+                savedUser
         );
-
-        UserAccount savedUser = userRepository.save(user);
-
-        return UserResponse.from(savedUser);
-
     }
-  @Transactional(readOnly = true)
-public UserResponse getCurrentUser(UUID userId) {
-    UserAccount user = userRepository
-            .findById(userId)
-            .orElseThrow(() ->
-                    new IllegalStateException("User not found")
-            );
 
-    return UserResponse.from(user);
-}
+    @Transactional(readOnly = true)
+    public UserResponse getCurrentUser(
+            UUID userId
+    ) {
+        UserAccount user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() ->
+                                new IllegalStateException(
+                                        "User not found"
+                                )
+                        );
+
+        return UserResponse.from(user);
+    }
 }
