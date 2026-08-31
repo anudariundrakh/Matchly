@@ -1164,3 +1164,158 @@ footer p {
     transition: none;
   }
 }
+
+/* =========================================================
+   FUTURISTIC ANIMATED BACKGROUND
+   Matchly purple + cyber cyan
+   ========================================================= */
+
+/*
+*/
+
+body {
+  background:
+    linear-gradient(
+      180deg,
+      #050816 0%,
+      #070812 48%,
+      #050711 100%
+    );
+}
+
+#root {
+  position: relative;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+/* moving purple + cyan aurora */
+#root::before {
+  content: "";
+  position: fixed;
+  inset: -18%;
+  z-index: -2;
+  pointer-events: none;
+
+  background:
+    radial-gradient(
+      circle at 18% 24%,
+      rgba(124, 58, 237, 0.72) 0%,
+      rgba(124, 58, 237, 0.34) 18%,
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 82% 22%,
+      rgba(0, 229, 255, 0.62) 0%,
+      rgba(0, 229, 255, 0.26) 17%,
+      transparent 33%
+    ),
+    radial-gradient(
+      circle at 74% 80%,
+      rgba(139, 92, 246, 0.5) 0%,
+      rgba(139, 92, 246, 0.2) 16%,
+      transparent 31%
+    ),
+    radial-gradient(
+      circle at 24% 78%,
+      rgba(34, 211, 238, 0.46) 0%,
+      rgba(34, 211, 238, 0.18) 15%,
+      transparent 30%
+    );
+
+  filter: blur(46px);
+  opacity: 0.9;
+  will-change: transform;
+
+  animation:
+    matchlyAurora 10s
+    ease-in-out
+    infinite alternate;
+}
+
+/* subtle futuristic grid */
+#root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  background-image:
+    linear-gradient(
+      rgba(255, 255, 255, 0.022) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.022) 1px,
+      transparent 1px
+    );
+
+  background-size: 72px 72px;
+  opacity: 0.28;
+
+  mask-image:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.9),
+      transparent 95%
+    );
+
+  -webkit-mask-image:
+    linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0.9),
+      transparent 95%
+    );
+}
+
+/* let the background remain visible behind the React app */
+.app {
+  position: relative;
+  min-height: 100vh;
+  background: transparent;
+}
+
+@keyframes matchlyAurora {
+  0% {
+    transform:
+      translate3d(-11%, -7%, 0)
+      scale(1)
+      rotate(-2deg);
+  }
+
+  25% {
+    transform:
+      translate3d(9%, -5%, 0)
+      scale(1.08)
+      rotate(3deg);
+  }
+
+  50% {
+    transform:
+      translate3d(10%, 9%, 0)
+      scale(1.13)
+      rotate(-3deg);
+  }
+
+  75% {
+    transform:
+      translate3d(-9%, 8%, 0)
+      scale(1.07)
+      rotate(4deg);
+  }
+
+  100% {
+    transform:
+      translate3d(12%, -8%, 0)
+      scale(1.11)
+      rotate(-4deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #root::before {
+    animation: none;
+  }
+}
