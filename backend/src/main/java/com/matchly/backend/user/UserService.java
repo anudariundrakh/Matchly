@@ -3,6 +3,7 @@ package com.matchly.backend.user;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,12 +15,15 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EmailVerificationService emailVerificationService;
     private final EmailVerificationMailService emailVerificationMailService;
+    private final boolean emailVerificationEnabled;
 
     public UserService(
             UserAccountRepository userRepository,
             PasswordEncoder passwordEncoder,
             EmailVerificationService emailVerificationService,
-            EmailVerificationMailService emailVerificationMailService
+            EmailVerificationMailService emailVerificationMailService,
+            @Value("${app.email-verification-enabled:true}")
+            boolean emailVerificationEnabled
     ) {
         this.userRepository =
                 userRepository;
@@ -32,6 +36,9 @@ public class UserService {
 
         this.emailVerificationMailService =
                 emailVerificationMailService;
+
+        this.emailVerificationEnabled =
+                emailVerificationEnabled;
     }
 
     @Transactional
@@ -65,20 +72,26 @@ public class UserService {
                         passwordHash
                 );
 
-        String verificationToken =
-                emailVerificationService
-                        .createVerificationToken(
-                                user
-                        );
+        String verificationToken = null;
+
+        if (emailVerificationEnabled) {
+            verificationToken =
+                    emailVerificationService
+                            .createVerificationToken(
+                                    user
+                            );
+        }
 
         UserAccount savedUser =
                 userRepository.save(user);
 
-        emailVerificationMailService
-                .sendVerificationEmail(
-                        savedUser,
-                        verificationToken
-                );
+        if (emailVerificationEnabled) {
+            emailVerificationMailService
+                    .sendVerificationEmail(
+                            savedUser,
+                            verificationToken
+                    );
+        }
 
         return UserResponse.from(
                 savedUser
