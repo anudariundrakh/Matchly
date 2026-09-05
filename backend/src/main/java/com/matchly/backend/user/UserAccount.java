@@ -18,16 +18,40 @@ public class UserAccount {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(
+            nullable = false,
+            unique = true,
+            length = 255
+    )
     private String email;
 
-    @Column(nullable = false, length = 50)
+    @Column(
+            nullable = false,
+            length = 50
+    )
     private String displayName;
 
-    @Column(nullable = false, length = 255)
+    @Column(
+            nullable = false,
+            length = 255
+    )
     private String passwordHash;
 
-    @Column(nullable = false, updatable = false)
+    @Column(
+            nullable = false,
+            columnDefinition = "boolean default false"
+    )
+    private boolean emailVerified = false;
+
+    @Column(length = 64)
+    private String emailVerificationTokenHash;
+
+    private Instant emailVerificationTokenExpiresAt;
+
+    @Column(
+            nullable = false,
+            updatable = false
+    )
     private Instant createdAt = Instant.now();
 
     protected UserAccount() {
@@ -58,8 +82,37 @@ public class UserAccount {
     public Instant getCreatedAt() {
         return createdAt;
     }
-    
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public String getEmailVerificationTokenHash() {
+        return emailVerificationTokenHash;
+    }
+
+    public Instant getEmailVerificationTokenExpiresAt() {
+        return emailVerificationTokenExpiresAt;
+    }
+
     String getPasswordHash() {
-    return passwordHash;
-}
+        return passwordHash;
+    }
+
+    public void setEmailVerificationToken(
+            String tokenHash,
+            Instant expiresAt
+    ) {
+        this.emailVerificationTokenHash =
+                tokenHash;
+
+        this.emailVerificationTokenExpiresAt =
+                expiresAt;
+    }
+
+    public void markEmailVerified() {
+        this.emailVerified = true;
+        this.emailVerificationTokenHash = null;
+        this.emailVerificationTokenExpiresAt = null;
+    }
 }

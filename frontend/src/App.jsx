@@ -16,6 +16,7 @@ import VideoChatPage from "./pages/VideoChatPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import SafetyPage from "./pages/SafetyPage";
+import VerifyEmailPage from "./pages/VerifyEmailPage";
 
 function App() {
   const location = useLocation();
@@ -29,7 +30,10 @@ function App() {
         key={location.pathname}
       >
         <Routes location={location}>
-          <Route path="/" element={<HomePage />} />
+          <Route
+            path="/"
+            element={<HomePage />}
+          />
 
           <Route
             path="/text-chat"
@@ -49,9 +53,25 @@ function App() {
             }
           />
 
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/safety" element={<SafetyPage />} />
+          <Route
+            path="/login"
+            element={<LoginPage />}
+          />
+
+          <Route
+            path="/signup"
+            element={<SignupPage />}
+          />
+
+          <Route
+            path="/safety"
+            element={<SafetyPage />}
+          />
+
+          <Route
+            path="/verify-email"
+            element={<VerifyEmailPage />}
+          />
         </Routes>
       </div>
 
